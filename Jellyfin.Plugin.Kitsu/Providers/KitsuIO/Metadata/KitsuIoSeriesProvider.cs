@@ -20,19 +20,21 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
     {
         private readonly ILogger<KitsuIoSeriesProvider> _log;
         private readonly IApplicationPaths _paths;
+        private readonly IHttpClientFactory _httpClientFactory;
         public int Order => -4;
-        public string Name => ProviderNames.KitsuIo;
+        public string Name => "Kitsu";
 
-        public KitsuIoSeriesProvider(ILogger<KitsuIoSeriesProvider> logger, IApplicationPaths paths)
+        public KitsuIoSeriesProvider(ILogger<KitsuIoSeriesProvider> logger, IApplicationPaths paths, IHttpClientFactory httpClientFactory)
         {
             _log = logger;
             _paths = paths;
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeriesInfo searchInfo, CancellationToken cancellationToken)
         {
             var filters = GetFiltersFromSeriesInfo(searchInfo);
-            var searchResults = await KitsuIoApi.Search_Series(filters);
+            var searchResults = await KitsuIoApi.Search_Series(filters, _httpClientFactory);
             var results = new List<RemoteSearchResult>();
 
             foreach (var series in searchResults.Data)
@@ -46,7 +48,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
                     ProductionYear = series.Attributes.StartDate?.Year,
                     PremiereDate = series.Attributes.StartDate?.DateTime,
                 };
-                parsedSeries.SetProviderId(ProviderNames.KitsuIo, series.Id.ToString());
+                parsedSeries.SetProviderId("Kitsu", series.Id.ToString());
                 results.Add(parsedSeries);
             }
 
@@ -57,18 +59,18 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
         {
             var result = new MetadataResult<MediaBrowser.Controller.Entities.TV.Series>();
 
-            var kitsuId = info.ProviderIds.GetOrDefault(ProviderNames.KitsuIo);
-            if (string.IsNullOrEmpty(kitsuId))
+            var kitsuId = info.ProviderIds.GetValueOrDefault("Kitsu");
+            if (string.IsNullOrWhiteSpace(kitsuId))
             {
                 _log.LogInformation("Start KitsuIo... Searching({Name})", info.Name);
                 var filters = GetFiltersFromSeriesInfo(info);
-                var apiResponse = await KitsuIoApi.Search_Series(filters);
+                var apiResponse = await KitsuIoApi.Search_Series(filters, _httpClientFactory);
                 kitsuId = apiResponse.Data.FirstOrDefault(x => x.Attributes.Titles.Equal(info.Name))?.Id.ToString();
             }
 
             if (!string.IsNullOrEmpty(kitsuId))
             {
-                var seriesInfo = await KitsuIoApi.Get_Series(kitsuId);
+                var seriesInfo = await KitsuIoApi.Get_Series(kitsuId, _httpClientFactory);
                 result.HasMetadata = true;
                 result.Item = new MediaBrowser.Controller.Entities.TV.Series
                 {
@@ -77,11 +79,11 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
                     CommunityRating = string.IsNullOrWhiteSpace(seriesInfo.Data.Attributes.AverageRating)
                         ? null
                         : (float?) float.Parse(seriesInfo.Data.Attributes.AverageRating, System.Globalization.CultureInfo.InvariantCulture) / 10,
-                    ProviderIds = new Dictionary<string, string>() {{ProviderNames.KitsuIo, kitsuId}},
+                    ProviderIds = new Dictionary<string, string>() {{"Kitsu", kitsuId}},
                     Genres = seriesInfo.Included?.Select(x => x.Attributes.Name).ToArray()
                              ?? Array.Empty<string>()
                 };
-                GenreHelper.CleanupGenres(result.Item);
+
                 StoreImageUrl(kitsuId, seriesInfo.Data.Attributes.PosterImage.Original.ToString(), "image");
             }
 
@@ -90,7 +92,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
 
         public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            var httpClient = Plugin.Instance.GetHttpClient();
+            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
 
             return await httpClient.GetAsync(url).ConfigureAwait(false);
         }

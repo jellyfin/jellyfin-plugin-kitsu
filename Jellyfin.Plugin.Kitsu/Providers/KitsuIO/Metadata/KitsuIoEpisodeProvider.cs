@@ -14,28 +14,30 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
 {
     public class KitsuIoEpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>
     {
-        public string Name => ProviderNames.KitsuIo;
+        private readonly IHttpClientFactory _httpClientFactory;
+        public string Name => "Kitsu";
 
-        public KitsuIoEpisodeProvider()
+        public KitsuIoEpisodeProvider(IHttpClientFactory httpClientFactory)
         {
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(EpisodeInfo searchInfo, CancellationToken cancellationToken)
         {
-            var id = searchInfo.ProviderIds.GetOrDefault(ProviderNames.KitsuIo);
-            if (id == null)
+            var id = searchInfo.ProviderIds.GetValueOrDefault("Kitsu");
+            if (string.IsNullOrWhiteSpace(id))
             {
                 return new List<RemoteSearchResult>();;
             }
 
-            var apiResponse = await KitsuIoApi.Get_Episodes(id);
+            var apiResponse = await KitsuIoApi.Get_Episodes(id, _httpClientFactory);
             return apiResponse.Data.Select(x => new RemoteSearchResult
             {
                 IndexNumber = x.Attributes.Number,
                 Name = x.Attributes.Titles.GetTitle,
                 ParentIndexNumber = x.Attributes.SeasonNumber,
                 PremiereDate = x.Attributes.AirDate,
-                ProviderIds = new Dictionary<string, string> {{ProviderNames.KitsuIo, x.Id.ToString()}},
+                ProviderIds = new Dictionary<string, string> {{"Kitsu", x.Id.ToString()}},
                 SearchProviderName = Name,
                 Overview = x.Attributes.Synopsis,
             });
@@ -45,13 +47,13 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
         {
             var result = new MetadataResult<Episode>();
 
-            var id = info.ProviderIds.GetOrDefault(ProviderNames.KitsuIo);
-            if (string.IsNullOrEmpty(id))
+            var id = info.ProviderIds.GetValueOrDefault("Kitsu");
+            if (string.IsNullOrWhiteSpace(id))
             {
                 return result;
             }
 
-            var episodeInfo = await KitsuIoApi.Get_Episode(id);
+            var episodeInfo = await KitsuIoApi.Get_Episode(id, _httpClientFactory);
 
             result.HasMetadata = true;
             result.Item = new Episode
@@ -71,7 +73,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
 
         public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            var httpClient = Plugin.Instance.GetHttpClient();
+            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
 
             return await httpClient.GetAsync(url).ConfigureAwait(false);
         }

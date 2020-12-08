@@ -1,3 +1,4 @@
+using MediaBrowser.Common.Net;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -10,14 +11,11 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient
 {
     internal class KitsuIoApi
     {
-        private static readonly HttpClient _httpClient;
         private const string _apiBaseUrl = "https://kitsu.io/api/edge";
         private static readonly JsonSerializerOptions _serializerOptions;
 
         static KitsuIoApi()
         {
-            _httpClient = Plugin.Instance.GetHttpClient();
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
 
             _serializerOptions = new JsonSerializerOptions
             {
@@ -27,31 +25,40 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient
             _serializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         }
 
-        public static async Task<ApiListResponse> Search_Series(Dictionary<string, string> filters)
+        public static async Task<ApiListResponse> Search_Series(Dictionary<string, string> filters, IHttpClientFactory httpClientFactory)
         {
             var filterString = string.Join("&",filters.Select(x => $"filter[{x.Key}]={x.Value}"));
             var pageString = "page[limit]=10";
 
-            var responseStream = await _httpClient.GetStreamAsync($"{_apiBaseUrl}/anime?{filterString}&{pageString}");
+            var httpClient = httpClientFactory.CreateClient(NamedClient.Default);
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
+
+            var responseStream = await httpClient.GetStreamAsync($"{_apiBaseUrl}/anime?{filterString}&{pageString}");
             return await JsonSerializer.DeserializeAsync<ApiListResponse>(responseStream, _serializerOptions);
         }
 
-        public static async Task<ApiResponse> Get_Series(string seriesId)
+        public static async Task<ApiResponse> Get_Series(string seriesId, IHttpClientFactory httpClientFactory)
         {
-            var responseStream = await _httpClient.GetStreamAsync($"{_apiBaseUrl}/anime/{seriesId}?include=genres");
+            var httpClient = httpClientFactory.CreateClient(NamedClient.Default);
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
+
+            var responseStream = await httpClient.GetStreamAsync($"{_apiBaseUrl}/anime/{seriesId}?include=genres");
             return await JsonSerializer.DeserializeAsync<ApiResponse>(responseStream, _serializerOptions);
         }
 
-        public static async Task<ApiListResponse> Get_Episodes(string seriesId)
+        public static async Task<ApiListResponse> Get_Episodes(string seriesId, IHttpClientFactory httpClientFactory)
         {
             var result = new ApiListResponse();
             long episodeCount = 10;
             var step = 10;
 
+            var httpClient = httpClientFactory.CreateClient(NamedClient.Default);
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
+
             for (long offset = 0; offset < episodeCount; offset += step)
             {
                 var queryString = $"?filter[mediaId]={seriesId}&page[limit]={step}&page[offset]={offset}";
-                var responseStream = await _httpClient.GetStreamAsync($"{_apiBaseUrl}/episodes{queryString}");
+                var responseStream = await httpClient.GetStreamAsync($"{_apiBaseUrl}/episodes{queryString}");
                 var response = await JsonSerializer.DeserializeAsync<ApiListResponse>(responseStream, _serializerOptions);
 
                 episodeCount = response.Meta.Count.Value;
@@ -61,10 +68,14 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient
             return result;
         }
 
-        public static async Task<ApiResponse> Get_Episode(string episodeId)
+        public static async Task<ApiResponse> Get_Episode(string episodeId, IHttpClientFactory httpClientFactory)
         {
             var filterString = $"/{episodeId}";
-            var responseStream = await _httpClient.GetStreamAsync($"{_apiBaseUrl}/episodes{filterString}");
+
+            var httpClient = httpClientFactory.CreateClient(NamedClient.Default);
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
+
+            var responseStream = await httpClient.GetStreamAsync($"{_apiBaseUrl}/episodes{filterString}");
             return await JsonSerializer.DeserializeAsync<ApiResponse>(responseStream, _serializerOptions);
         }
     }

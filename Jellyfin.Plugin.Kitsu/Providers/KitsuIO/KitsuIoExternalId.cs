@@ -10,14 +10,14 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO
     {
         public bool Supports(IHasProviderIds item)
             => item is Series || item is Movie;
-        
+
         public string ProviderName
             => "Kitsu";
-        
-        public string Key
-            => ProviderNames.KitsuIo;
 
-        public ExternalIdMediaType? Type 
+        public string Key
+            => "Kitsu";
+
+        public ExternalIdMediaType? Type
             => ExternalIdMediaType.Series;
 
         public string UrlFormatString
