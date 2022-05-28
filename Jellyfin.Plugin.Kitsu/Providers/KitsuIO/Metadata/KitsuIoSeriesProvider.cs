@@ -78,7 +78,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
                     // KitsuIO has a max rating of 100
                     CommunityRating = string.IsNullOrWhiteSpace(seriesInfo.Data.Attributes.AverageRating)
                         ? null
-                        : (float?) float.Parse(seriesInfo.Data.Attributes.AverageRating, System.Globalization.CultureInfo.InvariantCulture) / 10,
+                        : MathF.Round(float.Parse(seriesInfo.Data.Attributes.AverageRating, System.Globalization.CultureInfo.InvariantCulture) / 10, 1),
                     ProviderIds = new Dictionary<string, string>() {{"Kitsu", kitsuId}},
                     Genres = seriesInfo.Included?.Select(x => x.Attributes.Name).ToArray()
                              ?? Array.Empty<string>()
