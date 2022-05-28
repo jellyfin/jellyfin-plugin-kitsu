@@ -47,13 +47,16 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
         {
             var result = new MetadataResult<Episode>();
 
-            var id = info.ProviderIds.GetValueOrDefault("Kitsu");
-            if (string.IsNullOrWhiteSpace(id))
+            if (!info.SeriesProviderIds.TryGetValue("Kitsu", out var seriesId) || !info.IndexNumber.HasValue)
             {
                 return result;
             }
 
-            var episodeInfo = await KitsuIoApi.Get_Episode(id, _httpClientFactory);
+            var episodeInfo = await KitsuIoApi.Get_Episode(seriesId, info.IndexNumber.Value, _httpClientFactory);
+            if (episodeInfo?.Data?.Attributes == null)
+            {
+                return result;
+            }
 
             result.HasMetadata = true;
             result.Item = new Episode
@@ -61,6 +64,9 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
                 IndexNumber = info.IndexNumber,
                 ParentIndexNumber = info.ParentIndexNumber,
                 Name = episodeInfo.Data.Attributes.Titles.GetTitle,
+                PremiereDate = episodeInfo.Data.Attributes.AirDate,
+                Overview = episodeInfo.Data.Attributes.Synopsis,
+                ProviderIds = new Dictionary<string, string>() { { "Kitsu", episodeInfo.Data.Id.ToString() } }
             };
 
             if (episodeInfo.Data.Attributes.Length != null)
