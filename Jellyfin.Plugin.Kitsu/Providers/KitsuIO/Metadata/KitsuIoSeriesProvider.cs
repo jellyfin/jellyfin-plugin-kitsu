@@ -33,26 +33,29 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
 
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeriesInfo searchInfo, CancellationToken cancellationToken)
         {
-            var filters = GetFiltersFromSeriesInfo(searchInfo);
-            var searchResults = await KitsuIoApi.Search_Series(filters, _httpClientFactory);
-            var results = new List<RemoteSearchResult>();
+            var searchResults = new List<RemoteSearchResult>();
 
-            foreach (var series in searchResults.Data)
+            if (searchInfo.TryGetProviderId("Kitsu", out var seriesId))
             {
-                var parsedSeries = new RemoteSearchResult
+                var series = await KitsuIoApi.Get_Series(seriesId, _httpClientFactory);
+                if (series?.Data?.Attributes != null)
                 {
-                    Name = series.Attributes.Titles.GetTitle,
-                    SearchProviderName = Name,
-                    ImageUrl = series.Attributes.PosterImage.Medium.ToString(),
-                    Overview = series.Attributes.Synopsis,
-                    ProductionYear = series.Attributes.StartDate?.Year,
-                    PremiereDate = series.Attributes.StartDate?.DateTime,
-                };
-                parsedSeries.SetProviderId("Kitsu", series.Id.ToString());
-                results.Add(parsedSeries);
+                    searchResults.Add(MapToRemoteSearchResult(series.Data));
+                }
             }
 
-            return results;
+            var filters = GetFiltersFromSeriesInfo(searchInfo);
+            if (filters.Any(x => !string.IsNullOrEmpty(x.Value)))
+            {
+                var searchResponse = await KitsuIoApi.Search_Series(filters, _httpClientFactory);
+                var parsedSearchResponse = searchResponse?.Data?.Select(MapToRemoteSearchResult).ToList();
+                if (parsedSearchResponse?.Any() ?? false)
+                {
+                    searchResults.AddRange(parsedSearchResponse);
+                }
+            }
+
+            return searchResults;
         }
 
         public async Task<MetadataResult<MediaBrowser.Controller.Entities.TV.Series>> GetMetadata(SeriesInfo info, CancellationToken cancellationToken)
@@ -111,6 +114,22 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
             Directory.CreateDirectory(directory);
 
             File.WriteAllText(path, url);
+        }
+
+        private RemoteSearchResult MapToRemoteSearchResult(Series series)
+        {
+            var parsedSeries = new RemoteSearchResult
+            {
+                Name = series.Attributes.Titles.GetTitle,
+                SearchProviderName = Name,
+                ImageUrl = series.Attributes.PosterImage.Medium.ToString(),
+                Overview = series.Attributes.Synopsis,
+                ProductionYear = series.Attributes.StartDate?.Year,
+                PremiereDate = series.Attributes.StartDate?.DateTime,
+            };
+            parsedSeries.SetProviderId("Kitsu", series.Id.ToString());
+
+            return parsedSeries;
         }
     }
 }
