@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace Jellyfin.Plugin.Kitsu.Providers.KitsuIO.ApiClient.Models
@@ -12,19 +14,13 @@ namespace Jellyfin.Plugin.Kitsu.Providers.KitsuIO.ApiClient.Models
 
         [JsonPropertyName("en_us")] public string EnUs { get; set; }
 
-        public string GetTitle =>
-            !string.IsNullOrWhiteSpace(En) ? En :
-            !string.IsNullOrWhiteSpace(EnUs) ? EnUs :
-            !string.IsNullOrWhiteSpace(EnJp) ? EnJp :
-            JaJp;
+        public IEnumerable<string> GetTitlesOrderedByPriority() => new [] { En, EnUs, EnJp, JaJp }
+            .Where(title => !string.IsNullOrWhiteSpace(title));
 
-        public bool Equal(string title)
-        {
-            return
-                (En?.Equals(title) ?? false) ||
-                (EnUs?.Equals(title) ?? false) ||
-                (EnJp?.Equals(title) ?? false) ||
-                (JaJp?.Equals(title) ?? false);
-        }
+        public string GetTitle =>
+            GetTitlesOrderedByPriority().FirstOrDefault();
+
+        public bool Equal(string title) =>
+            GetTitlesOrderedByPriority().Contains(title);
     }
 }
