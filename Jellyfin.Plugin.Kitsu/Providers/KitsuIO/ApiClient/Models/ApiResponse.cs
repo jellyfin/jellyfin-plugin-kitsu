@@ -15,19 +15,4 @@ namespace Jellyfin.Plugin.Kitsu.Providers.KitsuIO.ApiClient.Models
             Data = initialData;
         }
     }
-
-    public class ResponseMeta
-    {
-        public long? Count { get; set; }
-    }
-
-    public class Included
-    {
-        public IncludedAttributes Attributes { get; set; }
-    }
-
-    public class IncludedAttributes
-    {
-        public string Name { get; set; }
-    }
 }

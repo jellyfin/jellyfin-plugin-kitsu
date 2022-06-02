@@ -14,6 +14,7 @@ using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.Entities.TV;
+using Jellyfin.Plugin.Kitsu.Providers.KitsuIO.ApiClient.Models;
 
 namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
 {
@@ -117,7 +118,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
             File.WriteAllText(path, url);
         }
 
-        private RemoteSearchResult MapToRemoteSearchResult(Series series)
+        private RemoteSearchResult MapToRemoteSearchResult(KitsuSeries series)
         {
             var parsedSeries = new RemoteSearchResult
             {
