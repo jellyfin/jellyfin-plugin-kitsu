@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.Kitsu.Providers.KitsuIO.ApiClient.Models;
 using MediaBrowser.Common.Net;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +17,6 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient
 
         static KitsuIoApi()
         {
-
             _serializerOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
@@ -25,7 +25,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient
             _serializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         }
 
-        public static async Task<ApiListResponse> Search_Series(Dictionary<string, string> filters, IHttpClientFactory httpClientFactory)
+        public static async Task<ApiResponse<List<KitsuSeries>>> Search_Series(Dictionary<string, string> filters, IHttpClientFactory httpClientFactory)
         {
             var filterString = string.Join("&",filters.Select(x => $"filter[{x.Key}]={x.Value}"));
             var pageString = "page[limit]=10";
@@ -34,21 +34,21 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
 
             var responseStream = await httpClient.GetStreamAsync($"{_apiBaseUrl}/anime?{filterString}&{pageString}");
-            return await JsonSerializer.DeserializeAsync<ApiListResponse>(responseStream, _serializerOptions);
+            return await JsonSerializer.DeserializeAsync<ApiResponse<List<KitsuSeries>>>(responseStream, _serializerOptions);
         }
 
-        public static async Task<ApiResponse> Get_Series(string seriesId, IHttpClientFactory httpClientFactory)
+        public static async Task<ApiResponse<KitsuSeries>> Get_Series(string seriesId, IHttpClientFactory httpClientFactory)
         {
             var httpClient = httpClientFactory.CreateClient(NamedClient.Default);
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
 
             var responseStream = await httpClient.GetStreamAsync($"{_apiBaseUrl}/anime/{seriesId}?include=genres");
-            return await JsonSerializer.DeserializeAsync<ApiResponse>(responseStream, _serializerOptions);
+            return await JsonSerializer.DeserializeAsync<ApiResponse<KitsuSeries>>(responseStream, _serializerOptions);
         }
 
-        public static async Task<ApiListResponse> Get_Episodes(string seriesId, IHttpClientFactory httpClientFactory)
+        public static async Task<ApiResponse<List<KitsuEpisode>>> Get_Episodes(string seriesId, IHttpClientFactory httpClientFactory)
         {
-            var result = new ApiListResponse();
+            var result = new ApiResponse<List<KitsuEpisode>>(new List<KitsuEpisode>());
             long episodeCount = 10;
             var step = 10;
 
@@ -59,7 +59,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient
             {
                 var queryString = $"?filter[mediaId]={seriesId}&page[limit]={step}&page[offset]={offset}";
                 var responseStream = await httpClient.GetStreamAsync($"{_apiBaseUrl}/episodes{queryString}");
-                var response = await JsonSerializer.DeserializeAsync<ApiListResponse>(responseStream, _serializerOptions);
+                var response = await JsonSerializer.DeserializeAsync<ApiResponse<List<KitsuEpisode>>>(responseStream, _serializerOptions);
 
                 episodeCount = response.Meta.Count.Value;
                 result.Data.AddRange(response.Data);
@@ -68,7 +68,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient
             return result;
         }
 
-        public static async Task<ApiResponse> Get_Episode(string episodeId, IHttpClientFactory httpClientFactory)
+        public static async Task<ApiResponse<KitsuEpisode>> Get_Episode(string episodeId, IHttpClientFactory httpClientFactory)
         {
             var filterString = $"/{episodeId}";
 
@@ -76,7 +76,25 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
 
             var responseStream = await httpClient.GetStreamAsync($"{_apiBaseUrl}/episodes{filterString}");
-            return await JsonSerializer.DeserializeAsync<ApiResponse>(responseStream, _serializerOptions);
+            return await JsonSerializer.DeserializeAsync<ApiResponse<KitsuEpisode>>(responseStream, _serializerOptions);
+        }
+
+        public static async Task<ApiResponse<KitsuEpisode>> Get_Episode(string seriesId, int episodeNumber, IHttpClientFactory httpClientFactory)
+        {
+            var queryString = $"?filter[mediaId]={seriesId}&filter[number]={episodeNumber}";
+
+            var httpClient = httpClientFactory.CreateClient(NamedClient.Default);
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
+
+            var responseStream = await httpClient.GetStreamAsync($"{_apiBaseUrl}/episodes{queryString}");
+            var response = await JsonSerializer.DeserializeAsync<ApiResponse<List<KitsuEpisode>>>(responseStream, _serializerOptions);
+
+            return new ApiResponse<KitsuEpisode>
+            {
+                Data = response.Data.FirstOrDefault(),
+                Included = response.Included,
+                Meta = response.Meta
+            };
         }
     }
 }

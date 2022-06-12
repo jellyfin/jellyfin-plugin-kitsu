@@ -13,10 +13,12 @@ using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
+using MediaBrowser.Controller.Entities.TV;
+using Jellyfin.Plugin.Kitsu.Providers.KitsuIO.ApiClient.Models;
 
 namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
 {
-    public class KitsuIoSeriesProvider : IRemoteMetadataProvider<MediaBrowser.Controller.Entities.TV.Series, SeriesInfo>, IHasOrder
+    public class KitsuIoSeriesProvider : IRemoteMetadataProvider<Series, SeriesInfo>, IHasOrder
     {
         private readonly ILogger<KitsuIoSeriesProvider> _log;
         private readonly IApplicationPaths _paths;
@@ -58,9 +60,9 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
             return searchResults;
         }
 
-        public async Task<MetadataResult<MediaBrowser.Controller.Entities.TV.Series>> GetMetadata(SeriesInfo info, CancellationToken cancellationToken)
+        public async Task<MetadataResult<Series>> GetMetadata(SeriesInfo info, CancellationToken cancellationToken)
         {
-            var result = new MetadataResult<MediaBrowser.Controller.Entities.TV.Series>();
+            var result = new MetadataResult<Series>();
 
             var kitsuId = info.ProviderIds.GetValueOrDefault("Kitsu");
             if (string.IsNullOrWhiteSpace(kitsuId))
@@ -75,7 +77,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
             {
                 var seriesInfo = await KitsuIoApi.Get_Series(kitsuId, _httpClientFactory);
                 result.HasMetadata = true;
-                result.Item = new MediaBrowser.Controller.Entities.TV.Series
+                result.Item = new Series
                 {
                     Overview = seriesInfo.Data.Attributes.Synopsis,
                     // KitsuIO has a max rating of 100
@@ -116,7 +118,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
             File.WriteAllText(path, url);
         }
 
-        private RemoteSearchResult MapToRemoteSearchResult(Series series)
+        private RemoteSearchResult MapToRemoteSearchResult(KitsuSeries series)
         {
             var parsedSeries = new RemoteSearchResult
             {
