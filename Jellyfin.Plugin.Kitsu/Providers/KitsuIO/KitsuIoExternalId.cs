@@ -21,6 +21,6 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO
             => ExternalIdMediaType.Series;
 
         public string UrlFormatString
-            => "https://kitsu.io/anime/{0}";
+            => "https://kitsu.app/anime/{0}";
     }
 }
