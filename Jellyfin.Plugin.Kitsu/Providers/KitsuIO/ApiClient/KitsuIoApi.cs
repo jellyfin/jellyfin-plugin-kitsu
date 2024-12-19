@@ -12,7 +12,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient
 {
     internal class KitsuIoApi
     {
-        private const string _apiBaseUrl = "https://kitsu.io/api/edge";
+        private const string _apiBaseUrl = "https://kitsu.app/api/edge";
         private static readonly JsonSerializerOptions _serializerOptions;
 
         static KitsuIoApi()

@@ -17,7 +17,7 @@
 </p>
 
 ## About
-This plugin adds the metadata provider for [Kitsu](https://kitsu.io).
+This plugin adds the metadata provider for [Kitsu](https://kitsu.app).
 
 ## Installation
 
