@@ -62,7 +62,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
             result.Item = new Episode
             {
                 IndexNumber = info.IndexNumber,
-                ParentIndexNumber = info.ParentIndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber ?? 1,
                 Name = episodeInfo.Data.Attributes.Titles.GetTitle,
                 PremiereDate = episodeInfo.Data.Attributes.AirDate,
                 Overview = episodeInfo.Data.Attributes.Synopsis,
