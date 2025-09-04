@@ -86,7 +86,10 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
                         : MathF.Round(float.Parse(seriesInfo.Data.Attributes.AverageRating, System.Globalization.CultureInfo.InvariantCulture) / 10, 1),
                     ProviderIds = new Dictionary<string, string>() {{"Kitsu", kitsuId}},
                     Genres = seriesInfo.Included?.Select(x => x.Attributes.Name).ToArray()
-                             ?? Array.Empty<string>()
+                             ?? Array.Empty<string>(),
+                    ProductionYear = seriesInfo.Data.Attributes.StartDate?.Year,
+                    PremiereDate = seriesInfo.Data.Attributes.StartDate?.DateTime,
+                    EndDate = seriesInfo.Data.Attributes.EndDate?.DateTime
                 };
 
                 StoreImageUrl(kitsuId, seriesInfo.Data.Attributes.PosterImage.Original.ToString(), "image");
@@ -127,7 +130,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
                 ImageUrl = series.Attributes.PosterImage.Medium.ToString(),
                 Overview = series.Attributes.Synopsis,
                 ProductionYear = series.Attributes.StartDate?.Year,
-                PremiereDate = series.Attributes.StartDate?.DateTime,
+                PremiereDate = series.Attributes.StartDate?.DateTime
             };
             parsedSeries.SetProviderId("Kitsu", series.Id.ToString());
 
