@@ -2,7 +2,7 @@
 name: "Kitsu"
 guid: "88d809e2-056b-47f4-9911-073949b9963f"
 imageUrl: "https://repo.jellyfin.org/releases/plugin/images/jellyfin-plugin-kitsu.png"
-version: 6
+version: 7
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 overview: "Kitsu metadata provider"
@@ -14,5 +14,4 @@ owner: "jellyfin"
 artifacts:
   - "Jellyfin.Plugin.Kitsu.dll"
 changelog: |-
-  - Fallback on empty ParentIndexNumber (#36) @Shadowghost
-  - Update kitsu domain (#34) @pikami
+  - Jellyfin 10.11 support (#37) @crobibero
