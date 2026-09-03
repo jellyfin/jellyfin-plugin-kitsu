@@ -2,9 +2,10 @@
 
 namespace Jellyfin.Plugin.Kitsu.Providers.KitsuIO.ApiClient.Models
 {
-    public class KitsuSeriesAttributes
+    public class KitsuSeriesAttributes : IKitsuAttributesWithTitles
     {
         public string Synopsis { get; set; }
+        public string CanonicalTitle { get; set; }
         public KitsuTitles Titles { get; set; }
         public string AverageRating { get; set; }
         public DateTimeOffset? StartDate { get; set; }

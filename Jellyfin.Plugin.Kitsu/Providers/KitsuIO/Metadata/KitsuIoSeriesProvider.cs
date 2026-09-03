@@ -15,6 +15,7 @@ using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.Entities.TV;
 using Jellyfin.Plugin.Kitsu.Providers.KitsuIO.ApiClient.Models;
+using Jellyfin.Plugin.Kitsu.Providers.KitsuIO.Services;
 
 namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
 {
@@ -70,7 +71,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
                 _log.LogInformation("Start KitsuIo... Searching({Name})", info.Name);
                 var filters = GetFiltersFromSeriesInfo(info);
                 var apiResponse = await KitsuIoApi.Search_Series(filters, _httpClientFactory);
-                kitsuId = apiResponse.Data.FirstOrDefault(x => x.Attributes.Titles.Equal(info.Name))?.Id.ToString();
+                kitsuId = apiResponse.Data.FirstOrDefault(series => TitleSelector.GetTitles(series.Attributes).Contains(info.Name))?.Id.ToString();
             }
 
             if (!string.IsNullOrEmpty(kitsuId))
@@ -79,6 +80,8 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
                 result.HasMetadata = true;
                 result.Item = new Series
                 {
+                    Name = TitleSelector.GetTitle(seriesInfo.Data.Attributes),
+                    OriginalTitle = TitleSelector.GetOriginalTitle(seriesInfo.Data.Attributes),
                     Overview = seriesInfo.Data.Attributes.Synopsis,
                     // KitsuIO has a max rating of 100
                     CommunityRating = string.IsNullOrWhiteSpace(seriesInfo.Data.Attributes.AverageRating)
@@ -125,7 +128,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
         {
             var parsedSeries = new RemoteSearchResult
             {
-                Name = series.Attributes.Titles.GetTitle,
+                Name = TitleSelector.GetTitle(series.Attributes),
                 SearchProviderName = Name,
                 ImageUrl = series.Attributes.PosterImage.Medium.ToString(),
                 Overview = series.Attributes.Synopsis,

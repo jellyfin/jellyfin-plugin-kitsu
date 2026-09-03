@@ -2,9 +2,10 @@ using System;
 
 namespace Jellyfin.Plugin.Kitsu.Providers.KitsuIO.ApiClient.Models
 {
-    public class KitsuEpisodeAttributes
+    public class KitsuEpisodeAttributes : IKitsuAttributesWithTitles
     {
         public string Synopsis { get; set; }
+        public string CanonicalTitle { get; set; }
         public KitsuTitles Titles { get; set; }
         public int? Number { get; set; }
         public int? SeasonNumber { get; set; }

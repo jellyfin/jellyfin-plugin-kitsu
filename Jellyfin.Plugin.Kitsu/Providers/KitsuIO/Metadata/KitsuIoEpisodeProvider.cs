@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
 using Jellyfin.Plugin.Anime.Providers.KitsuIO.ApiClient;
+using Jellyfin.Plugin.Kitsu.Providers.KitsuIO.Services;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
@@ -34,7 +35,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
             return apiResponse.Data.Select(x => new RemoteSearchResult
             {
                 IndexNumber = x.Attributes.Number,
-                Name = x.Attributes.Titles.GetTitle,
+                Name = TitleSelector.GetTitle(x.Attributes),
                 ParentIndexNumber = x.Attributes.SeasonNumber,
                 PremiereDate = x.Attributes.AirDate,
                 ProviderIds = new Dictionary<string, string> {{"Kitsu", x.Id.ToString()}},
@@ -63,7 +64,7 @@ namespace Jellyfin.Plugin.Anime.Providers.KitsuIO.Metadata
             {
                 IndexNumber = info.IndexNumber,
                 ParentIndexNumber = info.ParentIndexNumber ?? 1,
-                Name = episodeInfo.Data.Attributes.Titles.GetTitle,
+                Name = TitleSelector.GetTitle(episodeInfo.Data.Attributes),
                 PremiereDate = episodeInfo.Data.Attributes.AirDate,
                 Overview = episodeInfo.Data.Attributes.Synopsis,
                 ProviderIds = new Dictionary<string, string>() { { "Kitsu", episodeInfo.Data.Id.ToString() } }
